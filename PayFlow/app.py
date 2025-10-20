@@ -47,7 +47,7 @@ def create_app():
         id = db.Column(db.Integer, primary_key=True)
         username = db.Column(db.String(150), unique=True, nullable=False)
         email = db.Column(db.String(150), unique=True, nullable=True)
-        password = db.Column(db.String(150), nullable=False)
+        password = db.Column(db.Text, nullable=False)
         shifts = db.relationship('Shift', backref='user', lazy=True, cascade='all, delete-orphan')
         jobs = db.relationship('Job', backref='user', lazy=True, cascade='all, delete-orphan')
         expenses = db.relationship('Expense', backref='user', lazy=True, cascade='all, delete-orphan')
@@ -782,14 +782,25 @@ def create_app():
                     conn.execute(text("ALTER TABLE job ADD COLUMN color VARCHAR(20) DEFAULT '#4f46e5'"))
                     conn.commit()
         if 'user' in inspector.get_table_names():
-            user_columns = {col['name'] for col in inspector.get_columns('user')}
-            if 'email' not in user_columns:
+            user_columns = inspector.get_columns('user')
+            user_column_names = {col['name'] for col in user_columns}
+            if 'email' not in user_column_names:
                 try:
                     with db.engine.connect() as conn:
-                        conn.execute(text("ALTER TABLE user ADD COLUMN email VARCHAR(150)"))
+                        conn.execute(text('ALTER TABLE "user" ADD COLUMN email VARCHAR(150)'))
                         conn.commit()
                 except Exception as exc:
                     print(f"[WARN] Unable to add email column to user table: {exc}")
+            password_column = next((col for col in user_columns if col['name'] == 'password'), None)
+            if password_column:
+                password_type = str(password_column.get('type', '')).lower()
+                if 'text' not in password_type:
+                    try:
+                        with db.engine.connect() as conn:
+                            conn.execute(text('ALTER TABLE "user" ALTER COLUMN password TYPE TEXT'))
+                            conn.commit()
+                    except Exception as exc:
+                        print(f"[WARN] Unable to widen user.password column: {exc}")
         if 'receipt' in inspector.get_table_names():
             receipt_columns = {col['name'] for col in inspector.get_columns('receipt')}
             column_defs = {
