@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#2563eb" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>PayFlow — Wage & Expense Manager</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='icons/icon-192.png') }}">
+  <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/icon-192.png') }}">
+  <link rel="manifest" href="{{ url_for('manifest') }}">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen transition-colors duration-300">
+  <div id="app" class="mx-auto w-full max-w-screen-2xl px-4 py-6">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow p-5 mb-6">
+      <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-bold text-blue-600" data-i18n="header_title">💰 PayFlow — Wage & Expense Manager</h1>
+        <div class="flex items-center space-x-3">
+          <label for="languageSelect" class="text-sm text-gray-600" data-i18n="language_label">🌐 Language</label>
+          <select id="languageSelect" class="px-2 py-1 border border-gray-300 rounded text-sm bg-white">
+            <option value="en" data-i18n="lang_en">English</option>
+            <option value="ja" data-i18n="lang_ja">Japanese</option>
+            <option value="my" data-i18n="lang_my">Myanmar</option>
+            <option value="zh" data-i18n="lang_zh">Chinese</option>
+          </select>
+          <button id="themeToggle" class="px-3 py-2 rounded bg-gray-200 hover:bg-gray-300">🌙 Dark</button>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <div class="mt-4">
+        <div class="flex items-center justify-between md:hidden">
+          <span class="font-semibold text-gray-700" data-i18n="nav_menu_label">📂 Menu</span>
+          <button id="mobileMenuToggle" type="button" class="px-3 py-2 rounded border border-gray-200 text-gray-700 hover:bg-gray-100">
+            ☰
+          </button>
+        </div>
+        <div id="navMenu" class="mt-2 hidden flex-col gap-2 md:mt-0 md:flex md:flex-wrap md:flex-row md:gap-2">
+          <button class="nav-btn active px-4 py-2 bg-blue-500 text-white rounded" data-page="main" data-i18n="nav_calculator">📊 Calculator</button>
+          <button class="nav-btn px-4 py-2 bg-gray-200 text-gray-700 rounded" data-page="calendar" data-i18n="nav_calendar">🗓️ Calendar</button>
+          <button class="nav-btn px-4 py-2 bg-gray-200 text-gray-700 rounded" data-page="history" data-i18n="nav_history">📋 History</button>
+          <button class="nav-btn px-4 py-2 bg-gray-200 text-gray-700 rounded" data-page="jobs" data-i18n="nav_jobs">🏢 Jobs</button>
+          <button class="nav-btn px-4 py-2 bg-gray-200 text-gray-700 rounded" data-page="expenses" data-i18n="nav_expenses">🧾 Expenses</button>
+          <button class="nav-btn px-4 py-2 bg-gray-200 text-gray-700 rounded" data-page="budget" data-i18n="nav_budget">🎯 Budgets</button>
+          <button class="nav-btn px-4 py-2 bg-gray-200 text-gray-700 rounded" data-page="reports" data-i18n="nav_reports">📈 Reports</button>
+          <button class="nav-btn px-4 py-2 bg-gray-200 text-gray-700 rounded" data-page="receipts" data-i18n="nav_receipts">🧾 Receipts</button>
+          <button class="nav-btn px-4 py-2 bg-gray-200 text-gray-700 rounded" data-page="settings" data-i18n="nav_settings">⚙️ Settings</button>
+          <button class="nav-btn px-4 py-2 bg-gray-200 text-gray-700 rounded" data-page="advanced" data-i18n="nav_advanced">🔧 Advanced</button>
+          <button class="nav-btn px-4 py-2 bg-gray-200 text-gray-700 rounded" data-page="profile" data-i18n="nav_profile">👤 Profile</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Calculator -->
+    <div id="mainPage" class="page">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Input Form -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <h2 class="text-xl font-semibold mb-4 text-gray-800" data-i18n="main_shift_details">📝 Shift Details</h2>
+
+          <!-- Job selection -->
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="label_job">Job</label>
+            <div class="flex gap-2">
+              <select id="jobSelect" class="w-full px-3 py-2 border border-gray-300 rounded">
+                <!-- Populated by JS -->
+              </select>
+              <button id="refreshJobs" class="px-3 py-2 bg-gray-100 rounded hover:bg-gray-200">🔄</button>
+            </div>
+            <p class="text-xs text-gray-500 mt-1" data-i18n="hint_job_select">Select a job to auto-fill the default wage & currency.</p>
+          </div>
+
+          <div class="space-y-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="label_date">Date</label>
+              <input type="date" id="workDate" class="w-full px-3 py-2 border border-gray-300 rounded">
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="label_start_time">Start Time</label>
+                <input type="time" id="startTime" class="w-full px-3 py-2 border border-gray-300 rounded">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="label_end_time">End Time</label>
+                <input type="time" id="endTime" class="w-full px-3 py-2 border border-gray-300 rounded">
+              </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="label_break_start">Break Start</label>
+                <input type="time" id="breakStart" class="w-full px-3 py-2 border border-gray-300 rounded">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="label_break_end">Break End</label>
+                <input type="time" id="breakEnd" class="w-full px-3 py-2 border border-gray-300 rounded">
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="label_shift_type">Shift Type</label>
+              <select id="shiftType" class="w-full px-3 py-2 border border-gray-300 rounded">
+                <option value="part-time" data-i18n="shift_part_time">Part-time</option>
+                <option value="full-time" data-i18n="shift_full_time">Full-time</option>
+                <option value="day" data-i18n="shift_day">Day Shift</option>
+                <option value="night" data-i18n="shift_night">Night Shift</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="label_hourly_wage">Hourly Wage</label>
+              <div class="flex">
+                <select id="currency" class="px-3 py-2 border border-gray-300 rounded-l">
+                  <option value="¥">¥</option>
+                  <option value="$">$</option>
+                  <option value="€">€</option>
+                </select>
+                <input type="number" id="hourlyWage" placeholder="1200" class="flex-1 px-3 py-2 border border-gray-300 rounded-r">
+              </div>
+            </div>
+            <button id="calculateBtn" class="w-full bg-blue-500 text-white py-3 rounded hover:bg-blue-600 font-semibold" data-i18n="btn_calculate">🧮 Calculate Wage</button>
+          </div>
+        </div>
+
+        <!-- Results -->
+        <div class="bg-white rounded-lg shadow p-6">
+          <h2 class="text-xl font-semibold mb-4 text-gray-800" data-i18n="results_heading">💵 Results</h2>
+          <div id="results" class="space-y-3">
+            <div class="text-center text-gray-500 py-8">
+              Enter shift details and click calculate to see results
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Calendar -->
+    <div id="calendarPage" class="page hidden">
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <h2 class="text-xl font-semibold text-gray-800" data-i18n="calendar_heading">🗓️ Calendar Overview</h2>
+          <div class="flex items-center gap-2">
+            <button id="calendarPrev" type="button" class="px-3 py-2 bg-gray-100 rounded hover:bg-gray-200" aria-label="Previous month">⬅</button>
+            <span id="calendarMonthLabel" class="text-lg font-semibold text-gray-700">Month YYYY</span>
+            <button id="calendarNext" type="button" class="px-3 py-2 bg-gray-100 rounded hover:bg-gray-200" aria-label="Next month">➡</button>
+          </div>
+        </div>
+        <div class="mt-4">
+          <div class="grid grid-cols-7 gap-2 text-center text-xs font-semibold uppercase tracking-wide text-gray-500">
+            <div data-i18n="calendar_day_sun">Sun</div>
+            <div data-i18n="calendar_day_mon">Mon</div>
+            <div data-i18n="calendar_day_tue">Tue</div>
+            <div data-i18n="calendar_day_wed">Wed</div>
+            <div data-i18n="calendar_day_thu">Thu</div>
+            <div data-i18n="calendar_day_fri">Fri</div>
+            <div data-i18n="calendar_day_sat">Sat</div>
+          </div>
+          <div id="calendarGrid" class="mt-2 grid grid-cols-7 gap-2"></div>
+        </div>
+        <div class="mt-6">
+          <h3 class="font-semibold text-gray-700 mb-2" data-i18n="calendar_legend_heading">Legend</h3>
+          <div id="calendarLegend" class="flex flex-wrap gap-2 text-sm text-gray-600"></div>
+        </div>
+        <div id="calendarDetails" class="mt-6 hidden bg-gray-50 border border-gray-200 rounded-lg p-4">
+          <div class="flex items-center justify-between">
+            <h3 class="font-semibold text-gray-700" id="calendarDetailsDate">—</h3>
+            <button id="calendarDetailsClose" type="button" class="text-sm text-gray-500 hover:text-gray-700">✕</button>
+          </div>
+          <div class="mt-3 grid gap-4 md:grid-cols-2">
+            <div>
+              <h4 class="font-semibold text-gray-600 mb-2" data-i18n="calendar_shifts_heading">Shifts</h4>
+              <ul id="calendarDetailsShifts" class="space-y-2 text-sm text-gray-700"></ul>
+            </div>
+            <div>
+              <h4 class="font-semibold text-gray-600 mb-2" data-i18n="calendar_expenses_heading">Expenses</h4>
+              <ul id="calendarDetailsExpenses" class="space-y-2 text-sm text-gray-700"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div id="historyPage" class="page hidden">
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-semibold text-gray-800" data-i18n="history_heading">📋 Shift History</h2>
+          <div class="flex gap-2">
+            <button id="exportPDF" class="px-3 py-2 bg-red-500 text-white rounded hover:bg-red-600" data-i18n="history_export_pdf">📄 PDF</button>
+            <button id="exportCSV" class="px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600" data-i18n="history_export_csv">📊 CSV</button>
+            <a href="/api/export" class="px-3 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600" data-i18n="history_export_csv_server">📊 CSV (Server)</a>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full border-collapse border border-gray-300">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="border p-2 text-left" data-i18n="history_col_date">Date</th>
+                <th class="border p-2 text-left" data-i18n="history_col_job">Job</th>
+                <th class="border p-2 text-left" data-i18n="history_col_type">Type</th>
+                <th class="border p-2 text-left" data-i18n="history_col_start">Start</th>
+                <th class="border p-2 text-left" data-i18n="history_col_end">End</th>
+                <th class="border p-2 text-left" data-i18n="history_col_break">Break</th>
+                <th class="border p-2 text-left" data-i18n="history_col_total_time">Total Time</th>
+                <th class="border p-2 text-left" data-i18n="history_col_hourly">Hourly Wage</th>
+                <th class="border p-2 text-left" data-i18n="history_col_total">Total Wage</th>
+                <th class="border p-2 text-left" data-i18n="history_col_actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody">
+              <tr>
+                <td colspan="10" class="border p-6 text-center text-gray-500">
+                  <span data-i18n="history_empty">No shift records yet. Calculate your first shift!</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+          <div class="bg-blue-50 p-4 rounded">
+            <h3 class="font-semibold text-blue-800" data-i18n="period_week">This Week</h3>
+            <p id="weeklyTotal" class="text-2xl font-bold text-blue-600">¥0</p>
+          </div>
+          <div class="bg-green-50 p-4 rounded">
+            <h3 class="font-semibold text-green-800" data-i18n="period_month">This Month</h3>
+            <p id="monthlyTotal" class="text-2xl font-bold text-green-600">¥0</p>
+          </div>
+          <div class="bg-purple-50 p-4 rounded">
+            <h3 class="font-semibold text-purple-800" data-i18n="summary_total_records">Total Records</h3>
+            <p id="totalRecords" class="text-2xl font-bold text-purple-600">0</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Jobs -->
+    <div id="jobsPage" class="page hidden">
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800" data-i18n="jobs_heading">🏢 Jobs</h2>
+        <form id="addJobForm" class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="jobs_label_name">Job Name</label>
+            <input type="text" id="jobName" class="w-full px-3 py-2 border rounded">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="jobs_label_wage">Default Hourly Wage</label>
+            <input type="number" id="jobWage" class="w-full px-3 py-2 border rounded" placeholder="1200">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="jobs_label_currency">Currency</label>
+            <select id="jobCurrency" class="w-full px-3 py-2 border rounded">
+              <option value="¥">¥</option>
+              <option value="$">$</option>
+              <option value="€">€</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="jobs_label_color">Color</label>
+            <input type="color" id="jobColor" class="w-full h-10 border rounded" value="#4f46e5">
+          </div>
+          <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" data-i18n="jobs_add_button">➕ Add Job</button>
+        </form>
+
+        <div class="mt-6 overflow-x-auto">
+          <table class="w-full border-collapse border border-gray-300">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="border p-2 text-left" data-i18n="jobs_col_id">ID</th>
+                <th class="border p-2 text-left" data-i18n="jobs_col_name">Name</th>
+                <th class="border p-2 text-left" data-i18n="jobs_col_wage">Wage</th>
+                <th class="border p-2 text-left" data-i18n="jobs_col_currency">Currency</th>
+                <th class="border p-2 text-left" data-i18n="jobs_col_color">Color</th>
+                <th class="border p-2 text-left" data-i18n="jobs_col_actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="jobsTableBody">
+              <tr><td colspan="6" class="border p-6 text-center text-gray-500"><span data-i18n="jobs_empty">No jobs yet.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Expenses -->
+    <div id="expensesPage" class="page hidden">
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800" data-i18n="expenses_heading">🧾 Expenses</h2>
+        <form id="addExpenseForm" class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="label_date">Date</label>
+            <input type="date" id="expDate" class="w-full px-3 py-2 border rounded">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="expenses_label_category">Category</label>
+            <select id="expCategory" class="w-full px-3 py-2 border rounded">
+              <option value="food" data-i18n="category_food">Food</option>
+              <option value="transportation" data-i18n="category_transportation">Transportation</option>
+              <option value="shopping" data-i18n="category_shopping">Shopping</option>
+              <option value="bills" data-i18n="category_bills">Bills</option>
+              <option value="other" data-i18n="category_other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="expenses_label_amount">Amount</label>
+            <input type="number" id="expAmount" class="w-full px-3 py-2 border rounded" step="0.01">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="expenses_label_note">Note</label>
+            <input type="text" id="expDesc" class="w-full px-3 py-2 border rounded" placeholder="optional">
+          </div>
+          <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" data-i18n="expenses_add_button">➕ Add</button>
+        </form>
+
+        <!-- Expense Dashboard -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+          <div class="bg-blue-50 p-4 rounded">
+            <h3 class="font-semibold text-blue-800" data-i18n="period_today">Today</h3>
+            <p id="expToday" class="text-2xl font-bold text-blue-600">¥0</p>
+          </div>
+          <div class="bg-green-50 p-4 rounded">
+            <h3 class="font-semibold text-green-800" data-i18n="period_week">This Week</h3>
+            <p id="expWeek" class="text-2xl font-bold text-green-600">¥0</p>
+          </div>
+          <div class="bg-purple-50 p-4 rounded">
+            <h3 class="font-semibold text-purple-800" data-i18n="period_month">This Month</h3>
+            <p id="expMonth" class="text-2xl font-bold text-purple-600">¥0</p>
+          </div>
+          <div class="bg-orange-50 p-4 rounded">
+            <h3 class="font-semibold text-orange-800" data-i18n="period_year">This Year</h3>
+            <p id="expYear" class="text-2xl font-bold text-orange-600">¥0</p>
+          </div>
+        </div>
+
+        <!-- Expenses Table -->
+        <div class="overflow-x-auto mt-6">
+          <table class="w-full border-collapse border border-gray-300">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="border p-2 text-left" data-i18n="expenses_col_date">Date</th>
+                <th class="border p-2 text-left" data-i18n="expenses_col_category">Category</th>
+                <th class="border p-2 text-left" data-i18n="expenses_col_description">Description</th>
+                <th class="border p-2 text-left" data-i18n="expenses_col_amount">Amount</th>
+                <th class="border p-2 text-left" data-i18n="expenses_col_actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="expenseTableBody">
+              <tr><td colspan="5" class="border p-6 text-center text-gray-500"><span data-i18n="expenses_empty">No expenses yet.</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Budgets -->
+    <div id="budgetPage" class="page hidden">
+      <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <h2 class="text-xl font-semibold text-gray-800" data-i18n="budget_heading">🎯 Budgeting & Goals</h2>
+          <div class="flex items-center gap-2">
+            <label for="budgetMonth" class="text-sm text-gray-600" data-i18n="budget_month_label">Month</label>
+            <input type="month" id="budgetMonth" class="px-3 py-2 border rounded">
+            <button id="budgetRefresh" type="button" class="px-3 py-2 bg-gray-100 rounded hover:bg-gray-200" data-i18n="budget_refresh">🔄</button>
+          </div>
+        </div>
+
+        <form id="budgetForm" class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="budget_category_label">Category</label>
+            <select id="budgetCategory" class="w-full px-3 py-2 border rounded">
+              <option value="food" data-i18n="category_food">Food</option>
+              <option value="transportation" data-i18n="category_transportation">Transportation</option>
+              <option value="shopping" data-i18n="category_shopping">Shopping</option>
+              <option value="bills" data-i18n="category_bills">Bills</option>
+              <option value="other" data-i18n="category_other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="budget_amount_label">Monthly Budget</label>
+            <input type="number" id="budgetAmount" class="w-full px-3 py-2 border rounded" step="0.01" min="0">
+          </div>
+          <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" data-i18n="budget_save_button">💾 Save Budget</button>
+        </form>
+
+        <div id="budgetAlerts" class="mt-4 hidden bg-yellow-50 border border-yellow-200 text-yellow-800 rounded p-4 text-sm space-y-2"></div>
+
+        <div id="budgetProgressList" class="mt-6 space-y-4">
+          <p class="text-sm text-gray-500" data-i18n="budget_empty">No budget goals yet.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Receipts -->
+    <div id="receiptsPage" class="page hidden">
+      <div class="grid gap-6">
+        <div class="bg-white rounded-lg shadow p-6">
+          <h2 class="text-xl font-semibold text-gray-800" data-i18n="receipts_builder_heading">📑 Receipt Builder</h2>
+          <p class="text-sm text-gray-500 mt-1" data-i18n="receipts_builder_subtitle">Create a 領収書 by adding expense lines and generate a PDF.</p>
+
+          <div class="mt-4 grid gap-4 md:grid-cols-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="receipts_title_label">Receipt Title</label>
+              <input type="text" id="receiptTitle" class="w-full px-3 py-2 border rounded" placeholder="e.g., Transport March 15">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="receipts_date_label">Receipt Date</label>
+              <input type="date" id="receiptDate" class="w-full px-3 py-2 border rounded">
+            </div>
+            <div class="md:col-span-3">
+              <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="receipts_note_label">Note</label>
+              <textarea id="receiptNote" class="w-full px-3 py-2 border rounded" rows="3" placeholder="Optional notes for this receipt"></textarea>
+            </div>
+          </div>
+
+          <form id="receiptLineForm" class="mt-6 grid grid-cols-1 gap-3 md:grid-cols-7 md:items-end">
+            <div class="md:col-span-1">
+              <label class="block text-xs font-medium text-gray-600 mb-1" data-i18n="receipts_line_date">Date</label>
+              <input type="date" id="lineDate" class="w-full px-2 py-2 border rounded">
+            </div>
+            <div class="md:col-span-1">
+              <label class="block text-xs font-medium text-gray-600 mb-1" data-i18n="receipts_line_category">Category</label>
+              <select id="lineCategory" class="w-full px-2 py-2 border rounded">
+                <option value="food" data-i18n="category_food">Food</option>
+                <option value="transportation" data-i18n="category_transportation">Transportation</option>
+                <option value="shopping" data-i18n="category_shopping">Shopping</option>
+                <option value="bills" data-i18n="category_bills">Bills</option>
+                <option value="other" data-i18n="category_other">Other</option>
+              </select>
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-xs font-medium text-gray-600 mb-1" data-i18n="receipts_line_description">Description</label>
+              <input type="text" id="lineDescription" class="w-full px-2 py-2 border rounded" placeholder="e.g., Train fare">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1" data-i18n="receipts_line_quantity">Qty</label>
+              <input type="number" id="lineQuantity" class="w-full px-2 py-2 border rounded" value="1" min="0">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1" data-i18n="receipts_line_unit_price">Unit Price</label>
+              <input type="number" id="lineUnitPrice" class="w-full px-2 py-2 border rounded" step="0.01" min="0">
+            </div>
+            <div>
+              <label class="block text-xs font-medium text-gray-600 mb-1" data-i18n="receipts_line_tax">Tax %</label>
+              <input type="number" id="lineTaxRate" class="w-full px-2 py-2 border rounded" step="0.1" min="0">
+            </div>
+            <div class="md:col-span-1">
+              <button id="addReceiptLine" type="submit" class="w-full bg-blue-500 text-white px-3 py-2 rounded hover:bg-blue-600" data-i18n="receipts_add_line_button">➕ Add Line</button>
+            </div>
+          </form>
+
+          <div class="mt-6 overflow-x-auto">
+            <table class="w-full border border-gray-200 text-sm" id="receiptItemsTable">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="border px-2 py-2 text-left" data-i18n="receipts_line_date">Date</th>
+                  <th class="border px-2 py-2 text-left" data-i18n="receipts_line_category">Category</th>
+                  <th class="border px-2 py-2 text-left" data-i18n="receipts_line_description">Description</th>
+                  <th class="border px-2 py-2 text-right" data-i18n="receipts_line_quantity">Qty</th>
+                  <th class="border px-2 py-2 text-right" data-i18n="receipts_line_unit_price">Unit</th>
+                  <th class="border px-2 py-2 text-right" data-i18n="receipts_line_tax">Tax %</th>
+                  <th class="border px-2 py-2 text-right" data-i18n="receipts_line_total">Line Total</th>
+                  <th class="border px-2 py-2 text-center" data-i18n="action_remove">Remove</th>
+                </tr>
+              </thead>
+              <tbody id="receiptItemsBody">
+                <tr>
+                  <td colspan="8" class="border px-3 py-4 text-center text-gray-500" data-i18n="receipts_no_items">No line items yet. Add your first item above.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="mt-4 flex flex-wrap gap-4 text-sm">
+            <span class="font-semibold" data-i18n="receipts_subtotal_label">Subtotal:</span>
+            <span id="receiptSubtotal" class="font-semibold text-blue-600">0</span>
+            <span class="font-semibold" data-i18n="receipts_tax_label">Tax:</span>
+            <span id="receiptTaxTotal" class="font-semibold text-blue-600">0</span>
+            <span class="font-semibold" data-i18n="receipts_grand_label">Grand Total:</span>
+            <span id="receiptGrandTotal" class="font-semibold text-green-600">0</span>
+          </div>
+
+          <div class="mt-4 flex flex-wrap gap-3">
+            <button id="saveReceiptBtn" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600" data-i18n="receipts_save_button">💾 Save Receipt</button>
+            <button id="downloadReceiptPdf" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600" data-i18n="receipts_download_button">📄 Download PDF</button>
+            <button id="clearReceiptBtn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300" data-i18n="receipts_clear_button">♻️ Clear</button>
+          </div>
+          <p id="receiptBuilderMessage" class="mt-3 text-sm text-red-600 hidden"></p>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold text-gray-800" data-i18n="receipts_saved_heading">Saved Receipts</h3>
+            <button id="refreshReceiptsBtn" class="text-sm text-blue-600 hover:underline" data-i18n="action_refresh">Refresh</button>
+          </div>
+          <div id="savedReceipts" class="space-y-3">
+            <p class="text-sm text-gray-500" data-i18n="receipts_empty">No receipts saved yet.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reports -->
+    <div id="reportsPage" class="page hidden">
+      <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800" data-i18n="report_heading">📈 Summary Report</h2>
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="report_start">Start</label>
+            <input type="date" id="repStart" class="w-full px-3 py-2 border rounded">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="report_end">End</label>
+            <input type="date" id="repEnd" class="w-full px-3 py-2 border rounded">
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="report_jobs">Jobs</label>
+            <select id="repJobs" class="w-full px-3 py-2 border rounded" multiple></select>
+            <p class="text-xs text-gray-500 mt-1" data-i18n="report_hint">Hold Ctrl/Cmd to select multiple jobs.</p>
+          </div>
+          <button id="runReport" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" data-i18n="report_run">▶ Run</button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+          <div class="bg-blue-50 p-4 rounded">
+            <h3 class="font-semibold text-blue-800" data-i18n="report_income">Income (Wages)</h3>
+            <p id="repIncome" class="text-2xl font-bold text-blue-600">¥0</p>
+          </div>
+          <div class="bg-red-50 p-4 rounded">
+            <h3 class="font-semibold text-red-800" data-i18n="report_expense">Expenses</h3>
+            <p id="repExpense" class="text-2xl font-bold text-red-600">¥0</p>
+          </div>
+          <div class="bg-green-50 p-4 rounded">
+            <h3 class="font-semibold text-green-800" data-i18n="report_net">Net</h3>
+            <p id="repNet" class="text-2xl font-bold text-green-600">¥0</p>
+          </div>
+        </div>
+
+        <div class="mt-8">
+          <h3 class="text-lg font-semibold text-gray-800 mb-3" data-i18n="period_title">📊 Period Snapshots</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-white border border-blue-100 rounded p-4 shadow-sm">
+              <h4 class="font-semibold text-gray-700 mb-2" data-i18n="period_week">This Week</h4>
+              <div class="space-y-1 text-sm text-gray-600">
+                <div class="flex justify-between"><span data-i18n="period_income">Income</span><span id="weekIncome" class="font-semibold text-gray-900">¥0</span></div>
+                <div class="flex justify-between"><span data-i18n="period_expense">Expenses</span><span id="weekExpense" class="font-semibold text-gray-900">¥0</span></div>
+                <div class="flex justify-between"><span data-i18n="period_net">Net</span><span id="weekNet" class="font-semibold text-gray-900">¥0</span></div>
+              </div>
+            </div>
+            <div class="bg-white border border-indigo-100 rounded p-4 shadow-sm">
+              <h4 class="font-semibold text-gray-700 mb-2" data-i18n="period_month">This Month</h4>
+              <div class="space-y-1 text-sm text-gray-600">
+                <div class="flex justify-between"><span data-i18n="period_income">Income</span><span id="monthIncome" class="font-semibold text-gray-900">¥0</span></div>
+                <div class="flex justify-between"><span data-i18n="period_expense">Expenses</span><span id="monthExpense" class="font-semibold text-gray-900">¥0</span></div>
+                <div class="flex justify-between"><span data-i18n="period_net">Net</span><span id="monthNet" class="font-semibold text-gray-900">¥0</span></div>
+              </div>
+            </div>
+            <div class="bg-white border border-purple-100 rounded p-4 shadow-sm">
+              <h4 class="font-semibold text-gray-700 mb-2" data-i18n="period_year">This Year</h4>
+              <div class="space-y-1 text-sm text-gray-600">
+                <div class="flex justify-between"><span data-i18n="period_income">Income</span><span id="yearIncome" class="font-semibold text-gray-900">¥0</span></div>
+                <div class="flex justify-between"><span data-i18n="period_expense">Expenses</span><span id="yearExpense" class="font-semibold text-gray-900">¥0</span></div>
+                <div class="flex justify-between"><span data-i18n="period_net">Net</span><span id="yearNet" class="font-semibold text-gray-900">¥0</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+          <!-- By Job (income) -->
+          <div class="bg-gray-50 p-4 rounded">
+            <h3 class="font-semibold text-gray-800 mb-2" data-i18n="report_income_job">Income by Job</h3>
+            <canvas id="chartByJob" height="150"></canvas>
+          </div>
+          <!-- By Category (expenses) -->
+          <div class="bg-gray-50 p-4 rounded">
+            <h3 class="font-semibold text-gray-800 mb-2" data-i18n="report_expense_category">Expenses by Category</h3>
+            <canvas id="chartByCategory" height="150"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div id="settingsPage" class="page hidden">
+      <div class="grid gap-6 md:grid-cols-2">
+        <div class="bg-white rounded-lg shadow p-6">
+          <h2 class="text-xl font-semibold mb-4 text-gray-800" data-i18n="settings_basic_title">⚙️ Basic Settings</h2>
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="settings_default_wage">Default Hourly Wage</label>
+              <div class="flex">
+                <select id="defaultCurrency" class="px-3 py-2 border rounded-l">
+                  <option value="¥">¥</option>
+                  <option value="$">$</option>
+                  <option value="€">€</option>
+                </select>
+                <input type="number" id="defaultWage" placeholder="1200" class="flex-1 px-3 py-2 border rounded-r">
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="settings_default_shift">Default Shift Type</label>
+              <select id="defaultShiftType" class="w-full px-3 py-2 border rounded">
+                <option value="part-time" data-i18n="shift_part_time">Part-time</option>
+                <option value="full-time" data-i18n="shift_full_time">Full-time</option>
+                <option value="day" data-i18n="shift_day">Day Shift</option>
+                <option value="night" data-i18n="shift_night">Night Shift</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1" data-i18n="settings_autosave_label">Auto-save Calculations</label>
+              <label class="inline-flex items-center">
+                <input type="checkbox" id="autoSave" checked class="mr-2">
+                <span data-i18n="settings_autosave_hint">Automatically save each calculation</span>
+              </label>
+            </div>
+            <button id="saveSettings" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" data-i18n="settings_save_button">💾 Save Settings</button>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+          <h2 class="text-xl font-semibold mb-4 text-gray-800" data-i18n="settings_account_title">🛡️ Account Settings</h2>
+
+          <form id="changeEmailForm" class="space-y-3 mb-6">
+            <h3 class="text-lg font-semibold text-gray-700" data-i18n="settings_change_email_title">Change Email</h3>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1" for="newEmailInput" data-i18n="settings_new_email">New Email</label>
+              <input type="email" id="newEmailInput" class="w-full px-3 py-2 border rounded" placeholder="you@example.com">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1" for="currentPasswordForEmail" data-i18n="settings_current_password">Current Password</label>
+              <input type="password" id="currentPasswordForEmail" class="w-full px-3 py-2 border rounded">
+            </div>
+            <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" data-i18n="settings_update_email_button">✉️ Update Email</button>
+            <p id="changeEmailMessage" class="text-sm text-red-600 hidden"></p>
+          </form>
+
+          <form id="changePasswordForm" class="space-y-3">
+            <h3 class="text-lg font-semibold text-gray-700" data-i18n="settings_change_password_title">Change Password</h3>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1" for="currentPasswordInput" data-i18n="settings_current_password">Current Password</label>
+              <input type="password" id="currentPasswordInput" class="w-full px-3 py-2 border rounded">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1" for="newPasswordInput" data-i18n="settings_new_password">New Password</label>
+              <input type="password" id="newPasswordInput" class="w-full px-3 py-2 border rounded">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1" for="confirmPasswordInput" data-i18n="settings_confirm_password">Confirm New Password</label>
+              <input type="password" id="confirmPasswordInput" class="w-full px-3 py-2 border rounded">
+            </div>
+            <button class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600" data-i18n="settings_update_password_button">🔐 Update Password</button>
+            <p id="changePasswordMessage" class="text-sm text-red-600 hidden"></p>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Advanced -->
+    <div id="advancedPage" class="page hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-lg font-semibold mb-3 text-gray-800">🌙 Night Shift Settings</h3>
+          <div class="space-y-3">
+            <label class="inline-flex items-center">
+              <input type="checkbox" id="enableNightShift" class="mr-2">
+              <span>Enable Night Shift Bonus (25%)</span>
+            </label>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Night Start</label>
+                <input type="time" id="nightStart" value="22:00" class="w-full px-3 py-2 border rounded">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Night End</label>
+                <input type="time" id="nightEnd" value="05:00" class="w-full px-3 py-2 border rounded">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-lg font-semibold mb-3 text-gray-800">⏰ Overtime Settings</h3>
+          <div class="space-y-3">
+            <label class="inline-flex items-center">
+              <input type="checkbox" id="enableOvertime" class="mr-2">
+              <span>Enable Overtime Calculation</span>
+            </label>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Overtime After (hours)</label>
+              <input type="number" id="overtimeThreshold" value="8" class="w-full px-3 py-2 border rounded">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Overtime Rate (%)</label>
+              <input type="number" id="overtimeRate" value="150" class="w-full px-3 py-2 border rounded">
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-lg font-semibold mb-3 text-gray-800">💰 Bonuses & Deductions</h3>
+          <div class="space-y-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Meal Allowance</label>
+              <input type="number" id="mealAllowance" placeholder="500" class="w-full px-3 py-2 border rounded">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Transport Allowance</label>
+              <input type="number" id="transportAllowance" placeholder="300" class="w-full px-3 py-2 border rounded">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Weekend Bonus (%)</label>
+              <input type="number" id="weekendBonus" placeholder="10" class="w-full px-3 py-2 border rounded">
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+          <h3 class="text-lg font-semibold mb-3 text-gray-800">🔔 Notifications (placeholder)</h3>
+          <div class="space-y-3">
+            <label class="inline-flex items-center">
+              <input type="checkbox" id="enableNotifications" class="mr-2">
+              <span>Enable Notifications</span>
+            </label>
+            <label class="inline-flex items-center">
+              <input type="checkbox" id="shiftReminders" class="mr-2">
+              <span>Shift Reminders</span>
+            </label>
+            <label class="inline-flex items-center">
+              <input type="checkbox" id="paydayAlerts" class="mr-2">
+              <span>Payday Alerts</span>
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="mt-6 text-center">
+        <button id="saveAdvanced" class="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600 font-semibold">💾 Save Advanced Settings</button>
+      </div>
+    </div>
+
+    <!-- Profile -->
+    <div id="profilePage" class="page hidden">
+      <div class="bg-white rounded-lg shadow p-6 max-w-xl mx-auto">
+        <h2 class="text-xl font-semibold mb-4 text-center text-gray-800">👤 Profile</h2>
+        <div class="flex flex-col items-center space-y-3 mb-4">
+          <label class="cursor-pointer">
+            <input type="file" id="profilePicInput" accept="image/*" class="hidden">
+            <img id="profilePic" src="https://ui-avatars.com/api/?name=Guest" alt="Profile" class="w-24 h-24 rounded-full border-2 border-blue-400 object-cover hover:opacity-80 transition">
+          </label>
+          <span class="text-xs text-gray-500">Click image to upload</span>
+        </div>
+        <div class="space-y-3">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+            <input type="text" id="profileUsernameInput" class="w-full px-3 py-2 border rounded" value="Guest">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input type="email" id="profileEmailInput" class="w-full px-3 py-2 border rounded" value="-">
+          </div>
+          <button id="saveProfileBtn" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">💾 Save Profile</button>
+        </div>
+        <div class="flex justify-center mt-4">
+          <a href="/logout" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">🚪 Log Out</a>
+        </div>
+        <div class="flex justify-center mt-4">
+          <button id="closeProfileBtn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300" data-i18n="profile_back">⬅ Back to App</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

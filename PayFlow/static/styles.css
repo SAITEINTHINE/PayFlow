@@ -1,0 +1,199 @@
+/* ===== Global Layout: Full width and no horizontal scroll ===== */
+html, body {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+/* ===== Light / Dark theme variables ===== */
+:root {
+  --bg: #f3f4f6;
+  --card: #ffffff;
+  --text: #0f172a;
+  --muted: #4b5563;
+  --border: #e5e7eb;
+
+  --primary: #2563eb;   /* blue-600 */
+  --primary-hover: #1d4ed8;
+  --success: #16a34a;   /* green-600 */
+  --danger: #dc2626;    /* red-600 */
+  --yellow: #f59e0b;
+}
+.dark {
+  --bg: #0b1220;        /* deep navy */
+  --card: #0f172a;      /* slate-900 */
+  --text: #e5e7eb;      /* gray-200 */
+  --muted: #a1a1aa;     /* gray-400 */
+  --border: #263246;    /* darker slate */
+}
+
+/* ===== Base ===== */
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ===== Cards/Text/Borders in dark mode (for Tailwind utility classes) ===== */
+.dark .bg-white { background-color: var(--card) !important; }
+.dark .text-gray-800 { color: var(--text) !important; }
+.dark .text-gray-700 { color: var(--muted) !important; }
+.dark .text-gray-600 { color: var(--muted) !important; }
+.dark .bg-gray-50 { background-color: #111827 !important; }
+.dark .border-gray-300 { border-color: var(--border) !important; }
+.dark .bg-blue-50 { background-color: #0b1a38 !important; }
+.dark .bg-green-50 { background-color: #062a1b !important; }
+.dark .bg-purple-50 { background-color: #221a3b !important; }
+.dark .bg-red-50 { background-color: #2a0f12 !important; }
+
+/* ===== Form controls in dark ===== */
+.dark input[type="text"],
+.dark input[type="email"],
+.dark input[type="password"],
+.dark input[type="number"],
+.dark input[type="time"],
+.dark input[type="date"],
+.dark select,
+.dark textarea {
+  background: #0f172a !important;
+  color: var(--text) !important;
+  border-color: #334155 !important;
+}
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #94a3b8;
+}
+
+/* ===== Nav buttons (if you still use .nav-btn) ===== */
+.dark .nav-btn {
+  background-color: #111827 !important;
+  color: #e5e7eb !important;
+}
+.dark .nav-btn.active {
+  background-color: #3b82f6 !important;
+  color: #fff !important;
+}
+
+/* ===== Tables ===== */
+table {
+  border-collapse: collapse;
+}
+table thead tr {
+  border-bottom: 1px solid var(--border);
+}
+table th, table td {
+  border-bottom: 1px solid var(--border);
+}
+.dark table thead {
+  background: #1f2937 !important;
+}
+.dark table th, .dark table td {
+  border-color: #263246 !important;
+}
+
+/* Zebra rows (optional) */
+.table-zebra tbody tr:nth-child(odd) {
+  background: rgba(0,0,0,0.02);
+}
+.dark .table-zebra tbody tr:nth-child(odd) {
+  background: rgba(255,255,255,0.03);
+}
+
+/* ===== Buttons (utility if needed outside Tailwind) ===== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: .5rem .75rem;
+  border-radius: .375rem;
+  font-weight: 600;
+  transition: background .15s ease, color .15s ease, border-color .15s ease;
+}
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-hover); }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger:hover { filter: brightness(0.95); }
+.btn-success { background: var(--success); color: #fff; }
+.btn-success:hover { filter: brightness(0.95); }
+.btn-ghost { background: transparent; color: var(--text); }
+.btn-ghost:hover { background: rgba(0,0,0,.06); }
+.dark .btn-ghost:hover { background: rgba(255,255,255,.06); }
+
+/* ===== Cards ===== */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: .75rem;
+  box-shadow: 0 4px 14px rgba(0,0,0,.05);
+}
+
+/* ===== Center helper for pages ===== */
+.center-page {
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===== Animation ===== */
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.slide-in { animation: slideIn 0.3s ease-out; }
+
+/* ===== Avatar hover effect ===== */
+.avatar {
+  border: 2px solid #60a5fa; /* blue-400 */
+  transition: transform .15s ease, opacity .15s ease;
+}
+.avatar:hover { transform: scale(1.02); opacity: 0.95; }
+
+/* ===== Utility for max container ===== */
+.container-xl {
+  width: 100%;
+  max-width: 1120px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* ===== No outline on inputs when clicking with mouse (keep keyboard focus) ===== */
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ===== Scrollbar (optional) ===== */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 transparent;
+}
+::-webkit-scrollbar {
+  height: 10px; width: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #94a3b8; border-radius: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ===== Calendar helpers ===== */
+.calendar-cell {
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.calendar-cell:hover {
+  transform: translateY(-2px);
+}
+.calendar-cell--empty {
+  background: #f9fafb;
+}
+.dark .calendar-cell--empty {
+  background: #1f2937;
+}
+.calendar-placeholder {
+  min-height: 110px;
+}
+.dark .calendar-placeholder {
+  background: #1f2937;
+  border-color: #374151;
+}
